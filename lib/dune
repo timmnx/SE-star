@@ -1,0 +1,3 @@
+(library
+ (name se_star)
+ (libraries z3))

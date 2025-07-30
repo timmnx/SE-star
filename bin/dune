@@ -1,0 +1,5 @@
+(executable
+ (public_name se_star)
+ (name main)
+ (libraries se_star)
+ (promote (until-clean)))
