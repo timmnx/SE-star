@@ -10,7 +10,6 @@ module OptIntPrioqueue = PrioqueueFoncteur.Make (Zint)
 
 module StateHashtabl = Hashtbl.Make (struct
   type t = State.t
-
   let equal = State.same_program_point
   let hash (sigma : State.t) = Hashtbl.hash (sigma.store, sigma.prog)
 end)
@@ -26,6 +25,11 @@ let nrm, red, grn, blu, yel, mag, cya =
     "\x1B[1;36m" )
 ;;
 
+(**
+  This function is used to introduce a
+  fresh symbol when a read() instruction
+  is executed
+*)
 let read =
   let i = ref 0 in
   fun () -> incr i; !i
@@ -364,7 +368,8 @@ let find_bugs p (tphi : Cond.t) =
     { State.path = Cte true; State.store = Hashtbl.create 0; State.prog = p }
   in
   OptIntPrioqueue.push (h sigma) (0, 0, sigma) pq;
-  run pq h
+  let i, s = run pq h in
+  (i, s, pq.max_length)
 ;;
 
 let find_bugs_mem p (tphi : Cond.t) =

@@ -7,13 +7,18 @@ end
 
 module Make (Ord : OrderedType) = struct
   type prio = Ord.t
-  type 'a t = { mutable length : int; mutable data : (prio * 'a) option array }
+  type 'a t = {
+    mutable length : int;
+    mutable max_length : int;
+    mutable data : (prio * 'a) option array
+  }
 
-  let create () = { length = 0; data = [| None |] }
+  let create () = { length = 0; max_length = 0; data = [| None |] }
   let is_empty pq = pq.length = 0
 
   let print p pq =
     print_endline ("{ length = " ^ string_of_int pq.length);
+    print_endline ("; max_length = " ^ string_of_int pq.max_length);
     print_endline "; data = [| ";
     Array.iter
       (function
@@ -54,12 +59,11 @@ module Make (Ord : OrderedType) = struct
     resize pq;
     pq.data.(pq.length) <- Some (prio, elt);
     pq.length <- pq.length + 1;
+    pq.max_length <- max pq.length pq.max_length;
     up (pq.length - 1) prio elt pq
   ;;
 
   let rec down f_index f_prio f_elt pq : unit =
-    (* print_endline (string_of_int f_index ^" "^ string_of_int f_prio); *)
-    (* print print_int pq; *)
     let lambda = fun i -> if i < pq.length then pq.data.(i) else None in
     let l_index = (2 * f_index) + 1 in
     let r_index = (2 * f_index) + 2 in
@@ -85,19 +89,12 @@ module Make (Ord : OrderedType) = struct
 
   let pop pq =
     if pq.length = 0 then failwith "Cannot pop on empty!";
-    (* if pq.data.(0) = None then failwith "Pas normal"; *)
     let prio, elt = Option.get pq.data.(0) in
-    (* print print_int pq; *)
     pq.length <- pq.length - 1;
-    (* print print_int pq; *)
     pq.data.(0) <- pq.data.(pq.length);
-    (* print print_int pq; *)
     pq.data.(pq.length) <- None;
-    (* print print_int pq; *)
-    (* print_endline "Done"; *)
     if pq.length > 1 then (
       let last_prio, last_elt = Option.get pq.data.(0) in
-      (* if pq.data.(pq.length-1) = None then failwith "Pas normal"; *)
       down 0 last_prio last_elt pq;
       resize pq);
     (prio, elt)
