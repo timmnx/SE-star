@@ -54,7 +54,36 @@ module Examples = struct
     }
   ;;
 
-  let _ = phard, phard_ssa
+  let mc_carthy_91 k = 
+    { name = "mc_carthy_91_" ^ string_of_int k
+    ; target = Or (
+      And ( Eq (Var "n", Int 100), And (Ge (Add (Var "i", Int 1), Var "e"), And (Ge (Var "i", Int 5), Ge (Var "e", Int 2)))),
+      And ( Eq (Var "n", Int 100), And (Ge (Var "i", Add (Var "e", Int 1)), And (Ge (Var "i", Int 5), Ge (Var "e", Int 0))))
+    )
+    ; prog = 
+    Follow ( Define ("n", Read),
+    Follow ( Define ("e", Int 1),
+    Follow ( Define ("i", Int 0),
+      While ( Gt (Var "e", Int 0),
+        Follow ( Define ("i", Add (Var "i", Int 1)),
+        Follow ( If (Gt (Var "n", Int 100),
+          Follow (Define ("n", Sub (Var "n", Int 10)),
+            Define ("e", Sub (Var "e", Int 1))
+          ),
+          Follow (Define ("n", Add (Var "n", Int 11)),
+            Define ("e", Add (Var "e", Int 1))
+          )
+        ),
+        Assert (Or (Lt (Var "i", Int k), Not (Eq (Var "n", Int 100))))
+        )
+        )
+      )
+      )
+      )
+    )
+    }
+
+  let _ = phard, phard_ssa, mc_carthy_91
 
   type res =
   { name: string
@@ -89,7 +118,7 @@ module PQueue = PrioqueueFoncteur.Make (Zint)
 
 let () =
   let csv = "name;bfs_n;bfs_pp;bfs_t;astar_n;astar_pp;astar_t" in
-  let progs =
+  (* let progs =
     Examples.phard 2 :: Examples.phard_ssa 2 ::
     Examples.phard 4 :: Examples.phard_ssa 4 ::
     (* Examples.phard 6 :: Examples.phard_ssa 6 :: *)
@@ -97,9 +126,13 @@ let () =
     (* Examples.phard 10 :: Examples.phard_ssa 10 :: *)
     (* Examples.phard 12 :: Examples.phard_ssa 12 :: *)
     Examples.phard 16 :: Examples.phard_ssa 16 ::
+    [] in *)
+  let progs =
+    Examples.mc_carthy_91 2 :: Examples.mc_carthy_91 14 ::
+    (* Examples.mc_carthy_91 8 :: Examples.mc_carthy_91 16 :: *)
     [] in
   let res = List.map (fun x -> Examples.res_to_csv @@ Examples.test x) progs in
-  let file = open_out "data.csv" in
+  let file = open_out "data_91.csv" in
   Printf.fprintf file "%s" (List.fold_left (fun acc x -> acc ^ "\n" ^ x) csv res);
   close_out file;
   ()
