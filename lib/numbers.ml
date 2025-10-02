@@ -1,5 +1,12 @@
+(**
+  [Zint] provide an implementation of integers, including ± infinity and an undefined vaue.
+*)
 module Zint = struct
-  type t = Of of int | Infinity | NegInfinity | Undef
+  type t =
+    | Of of int
+    | Infinity
+    | NegInfinity
+    | Undef
 
   let to_string = function
     | Of i -> string_of_int i
@@ -9,7 +16,7 @@ module Zint = struct
   ;;
 
   let add a b =
-    match (a, b) with
+    match a, b with
     | Of x, Of y -> Of (x + y)
     | Infinity, Of _ | Of _, Infinity -> Infinity
     | NegInfinity, Of _ | Of _, NegInfinity -> NegInfinity
@@ -17,13 +24,14 @@ module Zint = struct
   ;;
 
   let sub a b =
-    match (a, b) with
+    match a, b with
     | Of x, Of y -> Of (x - y)
     | Infinity, Of _ | Of _, NegInfinity -> Infinity
     | NegInfinity, Of _ | Of _, Infinity -> NegInfinity
     | _, _ -> Undef
   ;;
 
+  (** It returns the absolute value of the integer. *)
   let absval = function
     | Of i -> Of (abs i)
     | Infinity | NegInfinity -> Infinity
@@ -31,7 +39,7 @@ module Zint = struct
   ;;
 
   let compare a b =
-    match (a, b) with
+    match a, b with
     | Of i, Of j -> compare i j
     | Infinity, Infinity -> 0
     | Infinity, _ -> 1
@@ -47,15 +55,23 @@ module Zint = struct
   ;;
 end
 
-module Zintervals = struct
-  type t = { inf : Zint.t; sup : Zint.t }
+(**
+  [Zintervals] gives a simple implementation of integers' intervals, based on [Zint].
 
-  let to_string s =
-    "[" ^ Zint.to_string s.inf ^ "; " ^ Zint.to_string s.sup ^ "]"
-  ;;
+  It provides basic functions on:
+  - an interval: [to_string] and [is_empty]
+  - two intervals: [distinct] and [dist].
+*)
+module Zintervals = struct
+  type t =
+    { inf : Zint.t
+    ; sup : Zint.t
+    }
+
+  let to_string s = "[" ^ Zint.to_string s.inf ^ "; " ^ Zint.to_string s.sup ^ "]"
 
   let is_empty s =
-    match (s.inf, s.sup) with
+    match s.inf, s.sup with
     | Zint.Infinity, Zint.NegInfinity -> true
     | Zint.Infinity, Zint.Infinity -> true
     | Zint.NegInfinity, Zint.NegInfinity -> true
@@ -64,23 +80,21 @@ module Zintervals = struct
   ;;
 
   let distinct a b =
-    is_empty a || is_empty b
+    is_empty a
+    || is_empty b
     || List.mem Zint.Undef [ a.inf; a.sup; b.inf; b.sup ]
     || Zint.compare a.sup b.inf = -1
     || Zint.compare b.sup a.inf = -1
   ;;
 
   let dist a b =
-    if distinct a b then begin
-      match
-        ( Zint.absval @@ Zint.sub a.sup b.inf,
-          Zint.absval @@ Zint.sub b.sup a.inf )
-      with
+    if distinct a b
+    then (
+      match Zint.absval @@ Zint.sub a.sup b.inf, Zint.absval @@ Zint.sub b.sup a.inf with
       | Zint.Of i, Zint.Of j -> Zint.Of (min i j)
       | Zint.Of i, _ | _, Zint.Of i -> Zint.Of i
       | Zint.Infinity, Zint.Infinity -> Zint.Infinity
-      | _ -> Zint.Undef
-    end
+      | _ -> Zint.Undef)
     else Zint.Of 0
   ;;
 end

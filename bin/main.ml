@@ -6,94 +6,105 @@ open Se_star.Numbers
 
 module Examples = struct
   type t =
-  { name: string
-  ; target: Syntax.Cond.t
-  ; prog: Syntax.Stmt.t
-  }
+    { name : string
+    ; target : Syntax.Cond.t
+    ; prog : Syntax.Stmt.t
+    }
 
   let phard k =
     { name = "phard" ^ string_of_int k
     ; target = And (Eq (Var "k", Int k), Le (Var "n", Int 0))
-    ; prog = Follow
-      ( Define ("n", Read),
+    ; prog =
         Follow
-          ( Define ("k", Int 0),
-            While
-              ( Not (Eq (Var "n", Int 0)),
-                Follow
-                  ( If
-                      ( Not (Le (Var "n", Int 0)),
-                        Follow
-                          ( Define ("k", Sub (Var "k", Int 1)),
-                            If (Eq (Var "k", Int k), Fail, Skip) ),
-                        Define ("k", Add (Var "k", Int 1)) ),
-                    Define ("n", Read) ) ) ) )
+          ( Define ("n", Read)
+          , Follow
+              ( Define ("k", Int 0)
+              , While
+                  ( Not (Eq (Var "n", Int 0))
+                  , Follow
+                      ( If
+                          ( Not (Le (Var "n", Int 0))
+                          , Follow
+                              ( Define ("k", Sub (Var "k", Int 1))
+                              , If (Eq (Var "k", Int k), Fail, Skip) )
+                          , Define ("k", Add (Var "k", Int 1)) )
+                      , Define ("n", Read) ) ) ) )
     }
   ;;
 
   let phard_ssa k =
     { name = "phard_ssa" ^ string_of_int k
-    ; target = And
-           ( And (Eq (Var "k2", Int k), Eq (Var "k1", Int (k + 1))),
-             Le (Var "n", Int 0) )
-    ; prog = Follow
-      ( Define ("n", Read),
+    ; target =
+        And (And (Eq (Var "k2", Int k), Eq (Var "k1", Int (k + 1))), Le (Var "n", Int 0))
+    ; prog =
         Follow
-          ( Define ("k1", Int 0),
-            While
-              ( Not (Eq (Var "n", Int 0)),
-                Follow
-                  ( If
-                      ( Not (Le (Var "n", Int 0)),
-                        Follow
-                          ( Define ("k2", Sub (Var "k1", Int 1)),
-                            If (Eq (Var "k2", Int k), Fail, Skip) ),
-                        Define ("k2", Add (Var "k1", Int 1)) ),
-                    Follow (Define ("k1", Var "k2"), Define ("n", Read)) ) ) )
-      )
+          ( Define ("n", Read)
+          , Follow
+              ( Define ("k1", Int 0)
+              , While
+                  ( Not (Eq (Var "n", Int 0))
+                  , Follow
+                      ( If
+                          ( Not (Le (Var "n", Int 0))
+                          , Follow
+                              ( Define ("k2", Sub (Var "k1", Int 1))
+                              , If (Eq (Var "k2", Int k), Fail, Skip) )
+                          , Define ("k2", Add (Var "k1", Int 1)) )
+                      , Follow (Define ("k1", Var "k2"), Define ("n", Read)) ) ) ) )
     }
   ;;
 
-  let mc_carthy_91 k = 
+  let mc_carthy_91 k =
     { name = "mc_carthy_91_" ^ string_of_int k
-    ; target = Or (
-      And ( Eq (Var "n", Int 100), And (Ge (Add (Var "i", Int 1), Var "e"), And (Ge (Var "i", Int 5), Ge (Var "e", Int 2)))),
-      And ( Eq (Var "n", Int 100), And (Ge (Var "i", Add (Var "e", Int 1)), And (Ge (Var "i", Int 5), Ge (Var "e", Int 0))))
-    )
-    ; prog = 
-    Follow ( Define ("n", Read),
-    Follow ( Define ("e", Int 1),
-    Follow ( Define ("i", Int 0),
-      While ( Gt (Var "e", Int 0),
-        Follow ( Define ("i", Add (Var "i", Int 1)),
-        Follow ( If (Gt (Var "n", Int 100),
-          Follow (Define ("n", Sub (Var "n", Int 10)),
-            Define ("e", Sub (Var "e", Int 1))
-          ),
-          Follow (Define ("n", Add (Var "n", Int 11)),
-            Define ("e", Add (Var "e", Int 1))
-          )
-        ),
-        Assert (Or (Lt (Var "i", Int k), Not (Eq (Var "n", Int 100))))
-        )
-        )
-      )
-      )
-      )
-    )
+    ; target =
+        Or
+          ( And
+              ( Eq (Var "n", Int 100)
+              , And
+                  ( Ge (Add (Var "i", Int 1), Var "e")
+                  , And (Ge (Var "i", Int k), Ge (Var "e", Int 2)) ) )
+          , And
+              ( Eq (Var "n", Int 100)
+              , And
+                  ( Ge (Var "i", Add (Var "e", Int 1))
+                  , And (Ge (Var "i", Int k), Ge (Var "e", Int 0)) ) ) )
+    ; prog =
+        Follow
+          ( Define ("n", Read)
+          , Follow
+              ( Define ("e", Int 1)
+              , Follow
+                  ( Define ("i", Int 0)
+                  , While
+                      ( Gt (Var "e", Int 0)
+                      , Follow
+                          ( Define ("i", Add (Var "i", Int 1))
+                          , Follow
+                              ( If
+                                  ( Gt (Var "n", Int 100)
+                                  , Follow
+                                      ( Define ("n", Sub (Var "n", Int 10))
+                                      , Define ("e", Sub (Var "e", Int 1)) )
+                                  , Follow
+                                      ( Define ("n", Add (Var "n", Int 11))
+                                      , Define ("e", Add (Var "e", Int 1)) ) )
+                              , Assert
+                                  (Or (Lt (Var "i", Int k), Not (Eq (Var "n", Int 100))))
+                              ) ) ) ) ) )
     }
+  ;;
 
   let _ = phard, phard_ssa, mc_carthy_91
 
   type res =
-  { name: string
-  ; bfs_n: int
-  ; bfs_pp: int
-  ; bfs_t: float
-  ; astar_n: int
-  ; astar_pp: int
-  ; astar_t: float
-  }
+    { name : string
+    ; bfs_n : int
+    ; bfs_pp : int
+    ; bfs_t : float
+    ; astar_n : int
+    ; astar_pp : int
+    ; astar_t : float
+    }
 
   let test (ex : t) : res =
     print_endline ("Testing " ^ ex.name);
@@ -102,15 +113,26 @@ module Examples = struct
     let t1 = Sys.time () in
     let astar_n, _, astar_pp = Aux.find_bugs ex.prog ex.target in
     let t2 = Sys.time () in
-    { name = ex.name;
-      bfs_n = bfs_n;      bfs_pp = bfs_pp;      bfs_t = t1 -. t0;
-      astar_n = astar_n;  astar_pp = astar_pp;  astar_t = t2 -. t1
+    { name = ex.name
+    ; bfs_n
+    ; bfs_pp
+    ; bfs_t = t1 -. t0
+    ; astar_n
+    ; astar_pp
+    ; astar_t = t2 -. t1
     }
   ;;
 
   let res_to_csv (r : res) : string =
-    Printf.sprintf "%s;%d;%d;%.3f;%d;%d;%.3f"
-    r.name r.bfs_n r.bfs_pp r.bfs_t r.astar_n r.astar_pp r.astar_t
+    Printf.sprintf
+      "%s;%d;%d;%.3f;%d;%d;%.3f"
+      r.name
+      r.bfs_n
+      r.bfs_pp
+      r.bfs_t
+      r.astar_n
+      r.astar_pp
+      r.astar_t
   ;;
 end
 
@@ -128,9 +150,14 @@ let () =
     Examples.phard 16 :: Examples.phard_ssa 16 ::
     [] in *)
   let progs =
-    Examples.mc_carthy_91 2 :: Examples.mc_carthy_91 14 ::
-    (* Examples.mc_carthy_91 8 :: Examples.mc_carthy_91 16 :: *)
-    [] in
+    [ Examples.mc_carthy_91 4
+    ; Examples.mc_carthy_91 6
+    ; Examples.mc_carthy_91 8
+    ; Examples.mc_carthy_91 10
+    ; Examples.mc_carthy_91 12
+      (* Examples.mc_carthy_91 8 :: Examples.mc_carthy_91 16 :: *)
+    ]
+  in
   let res = List.map (fun x -> Examples.res_to_csv @@ Examples.test x) progs in
   let file = open_out "data_91.csv" in
   Printf.fprintf file "%s" (List.fold_left (fun acc x -> acc ^ "\n" ^ x) csv res);
